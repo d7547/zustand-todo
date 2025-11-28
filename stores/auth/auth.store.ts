@@ -25,7 +25,7 @@ const authStateCreator: StateCreator<AuthState> = (set) => ({
           case 201:
           case 204:
             console.log("Login successful:", response.data);
-            set(() => ({ token: response.data.token }));
+            set(() => ({ token: response.data.access }));
             return response.data;
           case 400:
             throw {
@@ -80,14 +80,25 @@ const authStateCreator: StateCreator<AuthState> = (set) => ({
 });
 
 export const useAuthStore = create<AuthState>()(
-  createPersistedStore(authStateCreator, {
-    name: StoreKeys.AUTH,
-    version: 1,
-    migrate: (state: any, version: number) => {
-      if (version < 1) {
-        return authMigrations[0](state);
-      }
-      return state;
+  createPersistedStore(
+    authStateCreator,
+    {
+      name: StoreKeys.AUTH,
+      version: 1,
+      migrate: (state: any, version: number) => {
+        if (version < 1) {
+          return authMigrations[0](state);
+        }
+        return state;
+      },
     },
-  }) as any
+    {
+      // Persist only plain, cloneable data — exclude functions/actions
+      partialize: (s) => ({
+        user: s.user,
+        isAuthenticated: s.isAuthenticated,
+        token: s.token,
+      }),
+    }
+  ) as any
 );

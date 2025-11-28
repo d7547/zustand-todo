@@ -16,11 +16,14 @@ export function createPersistedStore<State extends Record<string, any>>(
   options?: {
     storage?: StorageEngine;
     onError?: (error: Error) => void;
+    // optional partialize to whitelist which parts of the state should be persisted
+    partialize?: (state: State) => Partial<State>;
   }
 ) {
   const { name, version = 1, migrate } = config;
   const storage = options?.storage || localforageStorage;
   const onError = options?.onError;
+  const partialize = options?.partialize;
 
   // Development: warn about HMR re-registrations
   if (process.env.NODE_ENV === "development") {
@@ -43,6 +46,8 @@ export function createPersistedStore<State extends Record<string, any>>(
     name,
     version,
     storage,
+    // forward partialize if provided so functions / runtime-only fields aren't persisted
+    ...(partialize ? { partialize } : {}),
     migrate: (persistedState: any, persistedVersion: number) => {
       if (migrate && persistedVersion < version) {
         console.log(
